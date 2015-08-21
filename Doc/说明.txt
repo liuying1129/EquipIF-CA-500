@@ -1,0 +1,56 @@
+Special→Setting→I/O Seting→Host Computer:
+Connected
+CLASS A(该协议不需握手)
+CA1000
+9600-8-1-N
+
+仪器上是否需发送到HC(Host Computer)全部打上勾
+
+仪器为9针公头
+
+线序：
+2 ------------------ 3
+3 ------------------ 2
+4 ------------------ 6
+5 ------------------ 5                
+6 ------------------ 4
+7 ------------------ 8
+8 ------------------ 7 
+
+
+Comport的设置：
+controlDTR:dtrEnable
+controlRTS:rtsHandshake
+DSRSensitivity:True
+FlowControl:fcHardware
+OutCTSFlow:True
+
+CA-500联机标识：
+CA-1500联机标识略有不同，请查看文档
+04X PT 
+22X XII
+05X APTT 
+25X PCcl
+06X Fbg 
+26X BXT
+30X AT3
+12X II 
+33X PC Chrom
+15X V 
+34X Hep
+17X VII 
+50X +Fbg
+18X VIII 
+51X TT
+19X IX 
+52X -Fbg
+20X X 
+61X AdDD
+21X XI 
+70X +AdD
+X的意义：
+1:Time
+2:Activity percent/concentration
+2:Ratio
+4:INR
+5:dFbg
