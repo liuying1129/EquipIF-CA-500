@@ -94,6 +94,7 @@ var
   RackNumber:integer;
   SampleIDNumber:integer;
   PatientName:integer;
+  EquipUnid:string;//设备唯一编号
 
 //  RFM:STRING;       //返回数据
   hnd:integer;
@@ -152,6 +153,10 @@ begin
   result := result + 'data source=' + datasource + ';';
   result := result + 'Initial Catalog=' + initialcatalog + ';';
   result := result + 'provider=' + 'SQLOLEDB.1' + ';';
+  //Persist Security Info,表示ADO在数据库连接成功后是否保存密码信息
+  //ADO缺省为True,ADO.net缺省为False
+  //程序中会传ADOConnection信息给TADOLYQuery,故设置为True
+  result := result + 'Persist Security Info=True;';
   if ifIntegrated then
     result := result + 'Integrated Security=SSPI;';
 end;
@@ -244,6 +249,7 @@ begin
   RackNumber:=ini.ReadInteger(IniSection,'Rack Number',4);
   SampleIDNumber:=ini.ReadInteger(IniSection,'Sample ID Number',13);
   PatientName:=ini.ReadInteger(IniSection,'Patient Name',11);
+  EquipUnid:=ini.ReadString(IniSection,'设备唯一编号','');
 
   QuaContSpecNoG:=ini.ReadString(IniSection,'高值质控联机号','9999');
   QuaContSpecNo:=ini.ReadString(IniSection,'常值质控联机号','9998');
@@ -372,6 +378,7 @@ begin
       'Sample ID Number'+#2+'Combobox'+#2+'15'+#13+'13'+#2+'0'+#2+#2+#3+
       'Patient Name'+#2+'Combobox'+#2+'15'+#13+'11'+#2+'0'+#2+#2+#3+
       '调试日志'+#2+'CheckListBox'+#2+#2+'0'+#2+'注:强烈建议在正常运行时关闭'+#2+#3+
+      '设备唯一编号'+#2+'Edit'+#2+#2+'1'+#2+#2+#3+
       '高值质控联机号'+#2+'Edit'+#2+#2+'2'+#2+#2+#3+
       '常值质控联机号'+#2+'Edit'+#2+#2+'2'+#2+#2+#3+
       '低值质控联机号'+#2+'Edit'+#2+#2+'2'+#2+#2;
@@ -466,7 +473,7 @@ begin
       FInts :=CreateOleObject('Data2LisSvr.Data2Lis');
       FInts.fData2Lis(ReceiveItemInfo,(SpecNo),CheckDate,
         (GroupName),(SpecType),(SpecStatus),(EquipChar),
-        (CombinID),'{!@#}{!@#}{!@#}{!@#}{!@#}{!@#}{!@#}{!@#}{!@#}{!@#}{!@#}{!@#}'+dSampleIDNumber,(LisFormCaption),(ConnectString),
+        (CombinID),'{!@#}{!@#}{!@#}{!@#}{!@#}{!@#}{!@#}{!@#}{!@#}{!@#}{!@#}{!@#}'+dSampleIDNumber+'{!@#}'+EquipUnid,(LisFormCaption),(ConnectString),
         (QuaContSpecNoG),(QuaContSpecNo),(QuaContSpecNoD),'',
         ifRecLog,true,'常规');
       //if FInts<>nil then FInts:=nil;

@@ -311,19 +311,21 @@ object frmMain: TfrmMain
     Top = 26
   end
   object ComPort1: TComPort
-    BaudRate = br1200
+    BaudRate = Br1200
     Port = 'COM1'
-    Parity.Bits = prEven
-    StopBits = sbOneStopBit
-    DataBits = dbEight
-    Events = [evRxChar, evTxEmpty, evRxFlag, evRing, evBreak, evCTS, evDSR, evError, evRLSD, evRx80Full]
+    Parity.Bits = PrEven
+    StopBits = SbOneStopBit
+    DataBits = DbEight
+    Events = [EvRxChar, EvTxEmpty, EvRxFlag, EvRing, EvBreak, EvCTS, EvDSR, EvError, EvRLSD, EvRx80Full]
     FlowControl.OutCTSFlow = True
     FlowControl.OutDSRFlow = False
-    FlowControl.ControlDTR = dtrEnable
-    FlowControl.ControlRTS = rtsHandshake
+    FlowControl.ControlDTR = DtrEnable
+    FlowControl.ControlRTS = RtsHandshake
     FlowControl.XonXoffOut = False
     FlowControl.XonXoffIn = False
     FlowControl.DSRSensitivity = True
+    StoredProps = [SpBasic]
+    TriggersOnRxChar = False
     Left = 72
     Top = 104
   end
