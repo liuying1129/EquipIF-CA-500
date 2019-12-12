@@ -10,7 +10,7 @@ function DeCryptStr(aStr: Pchar; aKey: Pchar): Pchar;stdcall;external 'DESCrypt.
 function EnCryptStr(aStr: Pchar; aKey: Pchar): Pchar;stdcall;external 'DESCrypt.dll';//º”√‹
 function GetHDSn(const RootPath:Pchar):Pchar;stdcall;external 'LYFunction.dll';
 function TryStrToFloatExt(const pSourStr:Pchar; var Value: Single): Boolean;stdcall;external 'LYFunction.dll';
-function GetEquipIdList(const Aadoconnstr,ABarCode,AEquipChar:pchar):PChar;stdcall;external 'CalcItemPro.dll';
+function GetEquipIdList(const Aadoconnstr,ABarCode,AEquipChar:pchar):PChar;stdcall;external 'DuplexSupport.dll';
 
 implementation
 
