@@ -326,12 +326,14 @@ object frmMain: TfrmMain
     FlowControl.DSRSensitivity = True
     StoredProps = [SpBasic]
     TriggersOnRxChar = False
+    OnAfterOpen = ComPort1AfterOpen
     Left = 72
     Top = 104
   end
   object ComDataPacket1: TComDataPacket
     ComPort = ComPort1
     IncludeStrings = True
+    MaxBufferSize = 3000
     OnPacket = ComDataPacket1Packet
     Left = 104
     Top = 104
