@@ -454,11 +454,14 @@ begin
 
   if length(Str)<=11 then exit;//Olympus:#$2DB#$3,#$2DE#$3
 
-  if leftstr(trim(Str),1)='D' THEN//检验结果 Analyzer->host
+  if(leftstr(trim(Str),1)='D')//CA、AU系列,检验结果 Analyzer->host
+   or((length(trim(Str))>0)and(trim(Str)[1] in [':','1','2','3','4','5','6','7','8','9']))THEN//日立7180
   BEGIN
     SpecNo:=GetSpecNo(Str);
-    CheckDate:='20'+copy(trim(Str),14,2)+'-'+copy(trim(Str),10,2)+'-'+copy(trim(Str),12,2)+' '+copy(trim(Str),16,2)+':'+copy(trim(Str),18,2)+':00';//Olympus无检查时间信息.Data2Lis会将无效时间转变为当前时间
-    if copy(trim(Str),9,1)=' ' then SpecType:='血浆' else if copy(trim(Str),9,1)='U' then SpecType:='尿液' else SpecType:='其他'; 
+    CheckDate:='20'+copy(trim(Str),14,2)+'-'+copy(trim(Str),10,2)+'-'+copy(trim(Str),12,2)+' '+copy(trim(Str),16,2)+':'+copy(trim(Str),18,2)+':00';//AU无检查时间信息.Data2Lis会将无效时间转变为当前时间
+    if(length(trim(Str))>0)and(trim(Str)[1] in [':','1','2','3','4','5','6','7','8','9'])then
+      CheckDate:='20'+copy(trim(Str),36,2)+'-'+copy(trim(Str),32,2)+'-'+copy(trim(Str),34,2)+' '+copy(trim(Str),38,2)+':'+copy(trim(Str),40,2)+':00';//日立7180
+    if copy(trim(Str),9,1)=' ' then SpecType:='血浆' else if copy(trim(Str),9,1)='U' then SpecType:='尿液' else SpecType:='血浆';
 
     rfm2:=copy(TrimLeft(Str),No_Item_Data,MaxInt);
     ReceiveItemInfo:=VarArrayCreate([0,(length(rfm2) div Len_Item_Data)-1],varVariant);
@@ -473,6 +476,8 @@ begin
       sValue:=StringReplace(sValue,'H','',[rfReplaceAll, rfIgnoreCase]);//AU400
       sValue:=StringReplace(sValue,'L','',[rfReplaceAll, rfIgnoreCase]);//AU400
       sValue:=StringReplace(sValue,'G','',[rfReplaceAll, rfIgnoreCase]);//AU400
+      sValue:=StringReplace(sValue,'!','',[rfReplaceAll, rfIgnoreCase]);//日立7180
+      sValue:=StringReplace(sValue,'V','',[rfReplaceAll, rfIgnoreCase]);//日立7180
       ReceiveItemInfo[i]:=VarArrayof([dlttype,sValue,'','']);
       inc(i);
       delete(rfm2,1,Len_Item_Data);
