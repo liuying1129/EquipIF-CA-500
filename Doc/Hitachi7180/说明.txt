@@ -1,16 +1,3 @@
-3.端口参数（9600,7,E,2）,仪器可设置
-4.UTILITY->HOST COMM.->RESULT ONLY打上勾(表示不需响应)
-
-5.控制电脑上接出一根线(一头类似网线头)，9针公头，标准接法
-
-
-1.Utility--Application--add Application
-传输的是App Code.设置的机器项目之项目代码与此号码对应(严格相同，不需补零)
-
-
- [Utility] – [System] – [Host Comm. Set] -》RESULT ONLY打上勾(表示不需响应)
-
-
 DTR/RTS高电位：勾选
 联机号位：4
 联机号长度：5
