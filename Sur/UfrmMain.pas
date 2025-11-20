@@ -4,29 +4,21 @@ interface
 
 uses
   Windows, Messages, SysUtils, Classes, Controls, Forms,
-  LYTray, Menus, StdCtrls, Buttons, ADODB,
-  ActnList, AppEvnts, ComCtrls, ToolWin, ExtCtrls,
-  registry,inifiles,Dialogs,
-  StrUtils, DB, ComObj,Variants,CPort;
+  Menus, StdCtrls, Buttons, ADODB,
+  ComCtrls, ToolWin, ExtCtrls,
+  inifiles,Dialogs,
+  StrUtils, DB, ComObj,Variants,CPort, CoolTrayIcon;
 
 type
   TfrmMain = class(TForm)
-    LYTray1: TLYTray;
     PopupMenu1: TPopupMenu;
     N1: TMenuItem;
     N2: TMenuItem;
     N3: TMenuItem;
     ADOConnection1: TADOConnection;
-    ApplicationEvents1: TApplicationEvents;
     CoolBar1: TCoolBar;
     ToolBar1: TToolBar;
-    ToolButton3: TToolButton;
-    ToolButton4: TToolButton;
     ToolButton8: TToolButton;
-    ActionList1: TActionList;
-    editpass: TAction;
-    about: TAction;
-    stop: TAction;
     ToolButton2: TToolButton;
     Memo1: TMemo;
     BitBtn1: TBitBtn;
@@ -39,12 +31,12 @@ type
     ComDataPacket1: TComDataPacket;
     ToolButton7: TToolButton;
     SaveDialog1: TSaveDialog;
+    LYTray1: TCoolTrayIcon;
     procedure N3Click(Sender: TObject);
     procedure FormCreate(Sender: TObject);
     //增加病人信息表中记录,返回该记录的唯一编号作为检验结果表的外键
     procedure FormClose(Sender: TObject; var Action: TCloseAction);
     procedure N1Click(Sender: TObject);
-    procedure ApplicationEvents1Activate(Sender: TObject);
     procedure ToolButton2Click(Sender: TObject);
     procedure BitBtn2Click(Sender: TObject);
     procedure BitBtn1Click(Sender: TObject);
@@ -53,11 +45,10 @@ type
     procedure ComDataPacket1Packet(Sender: TObject; const Str: String);
     procedure ToolButton7Click(Sender: TObject);
     procedure ComPort1AfterOpen(Sender: TObject);
+    procedure Memo1Change(Sender: TObject);
   private
     { Private declarations }
-    procedure WMSyscommand(var message:TWMMouse);message WM_SYSCOMMAND;
     procedure UpdateConfig;{配置文件生效}
-    function LoadInputPassDll:boolean;
     function MakeDBConn:boolean;
     function GetSpecNo(const Value:string):string; //取得联机号
   public
@@ -164,9 +155,6 @@ begin
 end;
 
 procedure TfrmMain.FormCreate(Sender: TObject);
-var
-  ctext        :string;
-  reg          :tregistry;
 begin
   ComDataPacket1.StartString:=STX;
   ComDataPacket1.StopString:=ETX;
@@ -177,52 +165,23 @@ begin
 
   Caption:='数据接收服务'+ExtractFileName(Application.ExeName);
   lytray1.Hint:='数据接收服务'+ExtractFileName(Application.ExeName);
-
-//=============================初始化密码=====================================//
-    reg:=tregistry.Create;
-    reg.RootKey:=HKEY_CURRENT_USER;
-    reg.OpenKey('\sunyear',true);
-    ctext:=reg.ReadString('pass');
-    if ctext='' then
-    begin
-        reg:=tregistry.Create;
-        reg.RootKey:=HKEY_CURRENT_USER;
-        reg.OpenKey('\sunyear',true);
-        reg.WriteString('pass','JIHONM{');
-        //MessageBox(application.Handle,pchar('感谢您使用智能监控系统，'+chr(13)+'请记住初始化密码：'+'lc'),
-        //            '系统提示',MB_OK+MB_ICONinformation);     //WARNING
-    end;
-    reg.CloseKey;
-    reg.Free;
-//============================================================================//
 end;
 
 procedure TfrmMain.FormClose(Sender: TObject; var Action: TCloseAction);
 begin
-    if LoadInputPassDll then action:=cafree else action:=caNone;
+  action:=caNone;
+  LYTray1.HideMainForm;
 end;
 
 procedure TfrmMain.N3Click(Sender: TObject);
 begin
-    if not LoadInputPassDll then exit;
-    application.Terminate;
+  if (MessageDlg('退出后将不再接收设备数据,确定退出吗？', mtWarning, [mbYes, mbNo], 0) <> mrYes) then exit;
+  application.Terminate;
 end;
 
 procedure TfrmMain.N1Click(Sender: TObject);
 begin
-  show;
-end;
-
-procedure TfrmMain.ApplicationEvents1Activate(Sender: TObject);
-begin
-  hide;
-end;
-
-procedure TfrmMain.WMSyscommand(var message: TWMMouse);
-begin
-  inherited;
-  if message.Keys=SC_MINIMIZE then hide;
-  message.Result:=-1;
+  LYTray1.ShowMainForm;
 end;
 
 procedure TfrmMain.UpdateConfig;
@@ -310,24 +269,6 @@ begin
   end;
 end;
 
-function TfrmMain.LoadInputPassDll: boolean;
-TYPE
-    TDLLFUNC=FUNCTION:boolean;
-VAR
-    HLIB:THANDLE;
-    DLLFUNC:TDLLFUNC;
-    PassFlag:boolean;
-begin
-    result:=false;
-    HLIB:=LOADLIBRARY('OnOffLogin.dll');
-    IF HLIB=0 THEN BEGIN SHOWMESSAGE(sCONNECTDEVELOP);EXIT; END;
-    DLLFUNC:=TDLLFUNC(GETPROCADDRESS(HLIB,'showfrmonofflogin'));
-    IF @DLLFUNC=NIL THEN BEGIN SHOWMESSAGE(sCONNECTDEVELOP);EXIT; END;
-    PassFlag:=DLLFUNC;
-    FREELIBRARY(HLIB);
-    result:=passflag;
-end;
-
 function TfrmMain.GetSpecNo(const Value:string):string; //取得联机号
 begin
     result:=copy(trim(Value),No_Patient_ID,Len_Patient_ID);
@@ -366,10 +307,17 @@ end;
 procedure TfrmMain.ToolButton2Click(Sender: TObject);
 var
   ss:string;
+  lsComPort:TStrings;
+  sComPort:String;
 begin
-  if LoadInputPassDll then
-  begin
-    ss:='串口选择'+#2+'Combobox'+#2+'COM1'+#13+'COM2'+#13+'COM3'+#13+'COM4'+#2+'0'+#2+#2+#3+
+  //获取串口列表 begin
+  lsComPort := TStringList.Create;
+  EnumComPorts(lsComPort);
+  sComPort:=lsComPort.Text;
+  lsComPort.Free;
+  //获取串口列表 end
+
+    ss:='串口选择'+#2+'Combobox'+#2+sComPort+#2+'0'+#2+#2+#3+
       '波特率'+#2+'Combobox'+#2+'19200'+#13+'9600'+#13+'4800'+#13+'2400'+#13+'1200'+#2+'0'+#2+#2+#3+
       '数据位'+#2+'Combobox'+#2+'8'+#13+'7'+#13+'6'+#13+'5'+#2+'0'+#2+#2+#3+
       '停止位'+#2+'Combobox'+#2+'1'+#13+'1.5'+#13+'2'+#2+'0'+#2+#2+#3+
@@ -394,7 +342,6 @@ begin
 
   if ShowOptionForm('',Pchar(IniSection),Pchar(ss),Pchar(ChangeFileExt(Application.ExeName,'.ini'))) then
 	  UpdateConfig;
-  end;
 end;
 
 procedure TfrmMain.BitBtn2Click(Sender: TObject);
@@ -449,7 +396,6 @@ VAR
 begin
   //20100602发现,Olympus传过来的数据有可能#$2#$2'D...',故需Trim
 
-  if length(memo1.Lines.Text)>=60000 then memo1.Lines.Clear;//memo只能接受64K个字符
   memo1.Lines.Add(Str);
 
   if length(Str)<=11 then exit;//Olympus:#$2DB#$3,#$2DE#$3
@@ -526,7 +472,6 @@ begin
     //exit;
     //if not GetEquipIdList(pchar(ConnectString),pchar(rSampleIDNumber),pchar(EquipChar),aryEquipId) then
     //begin
-    //  if length(memo1.Lines.Text)>=60000 then memo1.Lines.Clear;//memo只能接受64K个字符
     //  memo1.Lines.Add('条码号:'+rSampleIDNumber+',联机字母:'+EquipChar+',获取病人联机标识列表失败');
     //  exit;
     //end;
@@ -534,7 +479,6 @@ begin
     OrderInfoSend:=OrderInfoHeader+AnalysisParamData+ETX;
     if ComPort1.WriteStr(OrderInfoSend)<=0 then
     begin
-      if length(memo1.Lines.Text)>=60000 then memo1.Lines.Clear;//memo只能接受64K个字符
       memo1.Lines.Add('向仪器发送指令失败:'+OrderInfoSend);
     end;
   end;//}
@@ -563,7 +507,6 @@ begin
     //exit;
     //if not GetEquipIdList(pchar(ConnectString),pchar(rSampleIDNumber),pchar(EquipChar),aryEquipId) then
     //begin
-    //  if length(memo1.Lines.Text)>=60000 then memo1.Lines.Clear;//memo只能接受64K个字符
     //  memo1.Lines.Add('条码号:'+rSampleIDNumber+',联机字母:'+EquipChar+',获取病人联机标识列表失败');
     //  exit;
     //end;
@@ -571,7 +514,6 @@ begin
     OrderInfoSend:=OrderInfoHeader+AnalysisParamData+ETX;
     if ComPort1.WriteStr(OrderInfoSend)<=0 then
     begin
-      if length(memo1.Lines.Text)>=60000 then memo1.Lines.Clear;//memo只能接受64K个字符
       memo1.Lines.Add('向仪器发送指令失败:'+OrderInfoSend);
     end;
     
@@ -628,6 +570,11 @@ begin
     ComPort1.SetDTR(true);
     ComPort1.SetRTS(true);
   end;
+end;
+
+procedure TfrmMain.Memo1Change(Sender: TObject);
+begin
+  if length(memo1.Lines.Text)>=60000 then memo1.Lines.Clear;//memo只能接受64K个字符
 end;
 
 initialization
